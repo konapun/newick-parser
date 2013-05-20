@@ -1,11 +1,17 @@
+/*
+* A newick parser specialized for OneZoom style nwk strings
+* Author: Bremen Braun for TimeTree (www.timetree.org), 2013
+*
+* FIXME: possible shift/reduce conflict (take action shift)
+*/
 var nwk = {};
 nwk.parser = {
 	tokenize: function(src) {
 		var tokens = {
 			'(': /\(/,
 			')': /\)/,
-			'{': /{/,
-			'}': /}/,
+			'{': /{/, // this is a modification specific to OneZoom
+			'}': /}/, // ditto
 			':': /:/,
 			';': /;/,
 			',': /,/,
@@ -13,14 +19,17 @@ nwk.parser = {
 			'STRING': /[a-zA-Z_\+\.\\\-\d'\s\[\]\*/]+/,
 		},
 		classify = function(tkn) {
-			console.log("Classifying token \"" + tkn + "\"");
-			Object.keys(tokens).forEach(function(key) {
+			var tokenClass;
+			Object.keys(tokens).some(function(key) {
 				var classifier = new RegExp(tokens[key]);
 				
 				if (tkn.match(classifier)) {
-					return key;
+					tokenClass = key;
+					return true;
 				}
 			});
+			
+			return tokenClass;
 		},
 		index = 0,
 		regex = "";
@@ -33,7 +42,7 @@ nwk.parser = {
 				regex += '|';
 			}
 			
-			regex += '(' + tokenizer.source + ')';
+			regex += '(' + tokenizer.source + ')'; // capture separating tokens for classification
 			index++;
 		});
 		
@@ -44,7 +53,6 @@ nwk.parser = {
 		for (var i = 0; i < tokenized.length; i++) {
 			var token = tokenized[i];
 			if (token) { // skip undef and empty string
-				console.log(token);
 				named.push({
 					symbol: token,
 					type: classify(token)
@@ -54,19 +62,54 @@ nwk.parser = {
 		
 		return named; // tokens as classified symbols
 	},
+	
+	/* A recursive descent parser */
 	parse: function(src) {
-		var tokens = this.tokenize(src);
+		var tokens = this.tokenize(src),
+		accept = function(symbol) {
 		
-		for (var i = 0; i < tokens.length; i++) {
-			var token = tokens[i];
-			switch(token.type) {
-				default:
-					console.log("Switch on " + token.symbol);
-			}
-		}
+		},
+		expect = function(symbol) {
+		
+		},
+		
+		/* begin production acceptors */
+		length = function() {
+		
+		},
+		commonName = function() {
+		
+		},
+		name = function() {
+		
+		},
+		branch = function() {
+		
+		},
+		branchset = function() {
+		
+		},
+		internal = function() {
+		
+		},
+		leaf = function() {
+		
+		},
+		subtree = function() {
+		
+		},
+		tree = function() {
+		
+		},
+		file = function() {
+		
+		};
+		
+		//TODO
 	}
 };
 
+// Test
 var src = "(A{common_A}:0.1,B{common_B}:0.2,(C{common_C}:0.3,D{common_D}:0.4)E{common_E}:0.5)F{common_F};";
 nwk.parser.parse(src);
 console.log("DONE");
