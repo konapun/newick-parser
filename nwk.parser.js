@@ -16,7 +16,7 @@ nwk.parser = {
 			';': /;/,
 			',': /,/,
 			'NUMBER': /\d\.*\d*/,
-			'STRING': /[a-zA-Z_\+\.\\\-\d'\s\[\]\*/]+/,
+			'STRING': /[a-zA-Z_\+\.\\\-\d'\s\[\]\*\/]+/,
 		},
 		classify = function(tkn) {
 			var tokenClass;
@@ -68,30 +68,34 @@ nwk.parser = {
 		var tokens = this.tokenize(src),
 		
 		node = function() { // This is the structure as dictated by OneZoom
-			this.cname = null;
-			this.name1 = null;
-			this.name2 = null;
-			this.lengthbr = null;
+			this.cname = null; // common name
+			this.name1 = null; // genus
+			this.name2 = null; // species
+			this.lengthbr = null; // branch length (Mya)
 			this.phylogenetic_diversity = 0.0;
 			this.child1 = null;
 			this.child2 = null;
-			this.popstab = "U";
-			this.redlist = "NE";
+			this.popstab = "U";  // One of U, I, S, D
+			this.redlist = "NE"; // One of EX, EW, CR, EN, VU, NT, LC, DD, NE
 		},
+		children = [],
 		currnode = new node(),
 		currtok = tokens.shift(),
 		
 		// Parser utils
 		accept = function(symbol) {
 			if (currtok.type === symbol) {
+				var returnSym = currtok.symbol;
 				currtok = tokens.shift();
-				return true;
+				return returnSym;
 			}
+			
 			return false;
 		},
 		expect = function(symbol) {
+			var returnSym = currtok.symbol;
 			if (accept(symbol)) {
-				return true;
+				return returnSym;
 			}
 			
 			throw new Error("Unexpected symbol " + symbol.symbol);
@@ -100,7 +104,8 @@ nwk.parser = {
 		// Begin production acceptors
 		length = function() {
 			if (accept(':')) {
-				expect('NUMBER');
+				var number = expect('NUMBER');
+				currnode.lengthbr = number;
 			}
 			else {
 				throw new Error('Expected length, got ' + currtok.symbol);
@@ -114,11 +119,9 @@ nwk.parser = {
 			// EMPTY
 		},
 		name = function() {
-			if (accept('STRING')) {
-				currnode.cname = name;
-			}
-			else if (accept('NUMBER')) {
-				currnode.cname = name;
+			var nodename = currtok.symbol;
+			if (accept('STRING') || accept('NUMBER')) {
+				currnode.cname = currnode.name1 = currnode.name2 = nodename; //TODO: make the distinction later
 			}
 			else {
 				commonName();
@@ -155,7 +158,7 @@ nwk.parser = {
 				leaf();
 			}
 		},
-		tree = function() { //FIXME
+		tree = function() { //FIXME: ambiguous... need a longer lookahead
 			if (currtok.symbol === '(') {
 				subtree();
 			}
