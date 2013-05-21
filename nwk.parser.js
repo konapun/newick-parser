@@ -1,8 +1,8 @@
 /*
-* A newick parser specialized for OneZoom style nwk strings
-* Author: Bremen Braun for TimeTree (www.timetree.org), 2013
+* A newick hand-rolled tokenizer and recursive descent parser specialized for
+* OneZoom style nwk strings (see grammar/grammar.specialized.gram)
 *
-* FIXME: possible shift/reduce conflict (take action shift)
+* Author: Bremen Braun (konapun) for TimeTree (www.timetree.org), 2013
 */
 var nwk = {};
 nwk.parser = {
@@ -66,50 +66,162 @@ nwk.parser = {
 	/* A recursive descent parser */
 	parse: function(src) {
 		var tokens = this.tokenize(src),
-		accept = function(symbol) {
 		
+		node = function() { // This is the structure as dictated by OneZoom
+			this.cname = null;
+			this.name1 = null;
+			this.name2 = null;
+			this.lengthbr = null;
+			this.phylogenetic_diversity = 0.0;
+			this.child1 = null;
+			this.child2 = null;
+			this.popstab = "U";
+			this.redlist = "NE";
+		},
+		currnode = new node(),
+		currtok = tokens.shift(),
+		
+		// Parser utils
+		accept = function(symbol) {
+			if (currtok.type === symbol) {
+				currtok = tokens.shift();
+				return true;
+			}
+			return false;
 		},
 		expect = function(symbol) {
-		
+			if (accept(symbol)) {
+				return true;
+			}
+			
+			throw new Error("Unexpected symbol " + symbol.symbol);
 		},
 		
-		/* begin production acceptors */
+		// Begin production acceptors
 		length = function() {
-		
+			if (accept(':')) {
+				expect('NUMBER');
+			}
+			else {
+				throw new Error('Expected length, got ' + currtok.symbol);
+			}
 		},
 		commonName = function() {
-		
+			if (accept('{')) {
+				name();
+				expect('}');
+			}
+			// EMPTY
 		},
 		name = function() {
-		
+			if (accept('STRING')) {
+				currnode.cname = name;
+			}
+			else if (accept('NUMBER')) {
+				currnode.cname = name;
+			}
+			else {
+				commonName();
+			}
 		},
 		branch = function() {
-		
+			subtree();
+			length();
 		},
 		branchset = function() {
-		
+			branch();
+			while (accept(',')) {
+				branch();
+			}
 		},
 		internal = function() {
-		
+			if (accept('(')) {
+				branchset();
+				expect(')');
+				name();
+			}
+			else {
+				throw new Error("Expected (");
+			}
 		},
 		leaf = function() {
-		
+			name();
 		},
 		subtree = function() {
-		
+			if (currtok.symbol === '(') {
+				internal();
+			}
+			else {
+				leaf();
+			}
 		},
-		tree = function() {
-		
+		tree = function() { //FIXME
+			if (currtok.symbol === '(') {
+				subtree();
+			}
+			else {
+				branch();
+			}
+			
+			expect(';');
 		},
 		file = function() {
-		
+			tree();
 		};
 		
-		//TODO
+		return file();
 	}
 };
 
 // Test
-var src = "(A{common_A}:0.1,B{common_B}:0.2,(C{common_C}:0.3,D{common_D}:0.4)E{common_E}:0.5)F{common_F};";
+//var src = "(A{common_A}:0.1,B{common_B}:0.2,(C{common_C}:0.3,D{common_D}:0.4)E{common_E}:0.5)F{common_F};";
+var src = "(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;";
 nwk.parser.parse(src);
 console.log("DONE");
+/*
+Symbols:
+(
+A
+{
+common_A
+}
+:
+0.1
+,
+B
+{
+common_B
+}
+:
+0.2
+,
+(
+C
+{
+common_C
+}
+:
+0.3
+,
+D
+{
+common_d
+}
+:
+0.4
+)
+E
+{
+common_E
+}
+:
+0.5
+)
+F
+{
+common_F
+}
+;
+*/
+
+
