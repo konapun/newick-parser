@@ -1,7 +1,7 @@
 /*
-* A newick hand-rolled tokenizer and recursive descent parser specialized for
-* OneZoom style nwk strings (see grammar/grammar.specialized.gram)
+* A generic Newick hand-rolled tokenizer and recursive descent parser with options tailored for OneZoom style nwk strings (see grammar/grammar.specialized.gram)
 *
+* This parser accepts all valid forms of Newick, including unnamed nodes, no distances, and partial distances
 * Author: Bremen Braun (konapun) for TimeTree (www.timetree.org), 2013
 */
 var nwk = {};
@@ -10,13 +10,11 @@ nwk.parser = {
 		var tokens = {
 			'(': /\(/,
 			')': /\)/,
-			'{': /{/, // this is a modification specific to OneZoom
-			'}': /}/, // ditto
 			':': /:/,
 			';': /;/,
 			',': /,/,
 			'NUMBER': /\d\.*\d*/,
-			'STRING': /[a-zA-Z_\+\.\\\-\d'\s\[\]\*\/]+/,
+			'STRING': /[a-zA-Z_\+\.\\\-\d'\s\[\]\*\/{}]+/, // your mileage with this regex may vary
 		},
 		classify = function(tkn) {
 			var tokenClass;
@@ -64,23 +62,30 @@ nwk.parser = {
 	},
 	
 	/* A recursive descent parser */
-	parse: function(src) {
-		var tokens = this.tokenize(src),
+	parse: function(srcOrTokens) {
+		var tokens;
+		if (Object.prototype.toString.call(srcOrTokens) === '[object Array]') { // parsing tokens
+			tokens = srcOrTokens;
+		}
+		else {
+			tokens = this.tokenize(srcOrTokens); // parsing source string
+		}
 		
-		node = function() { // This is the structure as dictated by OneZoom
-			this.cname = null; // common name
-			this.name1 = null; // genus
-			this.name2 = null; // species
-			this.lengthbr = null; // branch length (Mya)
-			this.phylogenetic_diversity = 0.0;
-			this.child1 = null;
-			this.child2 = null;
-			this.popstab = "U";  // One of U, I, S, D
-			this.redlist = "NE"; // One of EX, EW, CR, EN, VU, NT, LC, DD, NE
+		var
+		enumerator = 0, // assign unique node IDs
+		node = function() {
+			this.id = enumerator++; // for debugging
+			this.data = "";
+			this.branchlength = 0;
+			this.children = [];
 		},
 		children = [],
-		currnode = new node(),
+		currnode = null, // created on ( or ,
 		currtok = tokens.shift(),
+		hierStack = [], // stack of parent nodes, initially contains only the unnamed root
+		deferredName = "", // names are optional and proceed their creation event (stored as data)
+		deferredLength = 0, // same for branch lengths
+		lastPop = null,
 		
 		// Parser utils
 		accept = function(symbol) {
@@ -98,34 +103,24 @@ nwk.parser = {
 				return returnSym;
 			}
 			
-			throw new Error("Unexpected symbol " + symbol.symbol);
+			throw new Error("Unexpected symbol " + returnSym);
 		},
 		
-		// Begin production acceptors
+		// Begin production rules
 		length = function() {
 			if (accept(':')) {
-				var number = expect('NUMBER');
-				currnode.lengthbr = number;
+				deferredLength = expect('NUMBER');
 			}
 			else {
 				throw new Error('Expected length, got ' + currtok.symbol);
 			}
 		},
-		commonName = function() {
-			if (accept('{')) {
-				name();
-				expect('}');
-			}
-			// EMPTY
-		},
 		name = function() {
 			var nodename = currtok.symbol;
 			if (accept('STRING') || accept('NUMBER')) {
-				currnode.cname = currnode.name1 = currnode.name2 = nodename; //TODO: make the distinction later
+				deferredName = nodename;
 			}
-			else {
-				commonName();
-			}
+			// EMPTY
 		},
 		branch = function() {
 			subtree();
@@ -134,13 +129,59 @@ nwk.parser = {
 		branchset = function() {
 			branch();
 			while (accept(',')) {
+				var childnode = new node();
+				if (deferredName) {
+					childnode.data = deferredName; // TODO: make the distinction later
+					deferredName = "";
+				}
+				if (deferredLength) {
+					childnode.branchlength = deferredLength;
+					deferredLength = 0;
+				}
+				
+				currnode.addChild(childnode);
+				
 				branch();
 			}
 		},
 		internal = function() {
 			if (accept('(')) {
+				currnode = new node();
+				hierStack.push(currnode);
 				branchset();
 				expect(')');
+				
+				var popped;
+				if (hierStack.length > 1) {
+					var childnode = new node();
+					if (deferredName) {
+						childnode.data = deferredName;
+						deferredName = "";
+					}
+					if (deferredLength) {
+						childnode.branchlength = deferredLength;
+						deferredLength = 0;
+					}
+					currnode.addChild(childnode);
+					popped = hierStack.pop();
+					lastPopped = popped;
+				}
+				else {
+					if (deferredName) {
+						lastPopped.data = deferredName;
+						deferredName = "";
+					}
+					if (deferredLength) {
+						lastPopped.branchlength = deferredLength;
+						deferredLength = 0;
+					}
+				}
+				
+				currnode = hierStack[hierStack.length-1];
+				if (popped) {
+					currnode.addChild(popped);
+				}
+				
 				name();
 			}
 			else {
@@ -167,20 +208,69 @@ nwk.parser = {
 			}
 			
 			expect(';');
+			if (deferredName) { // name for the root of the tree
+				currnode.data = deferredName;
+			}
+			
+			return currnode;
 		},
 		file = function() {
-			tree();
+			return tree();
 		};
+		
+		node.prototype.addChild = function(n) { // tree may be large so conserve mem by adding function to proto
+			this.children.push(n);
+		}
 		
 		return file();
 	}
 };
 
+nwk.converter = {};
+nwk.converter.convert2oz = function() {
+	var ozNode = function() { // node structure as used by OneZoom
+		this.cname = null; // common name
+		this.name1 = null; // genus
+		this.name2 = null; // species
+		this.lengthbr = null; // branch length (Mya)
+		this.phylogenetic_diversity = 0.0;
+		this.child1 = null;
+		this.child2 = null;
+		this.popstab = "U";  // One of U, I, S, D
+		this.redlist = "NE"; // One of EX, EW, CR, EN, VU, NT, LC, DD, NE
+	};
+	
+	console.log("Converting");
+	//TODO
+};
+
 // Test
 //var src = "(A{common_A}:0.1,B{common_B}:0.2,(C{common_C}:0.3,D{common_D}:0.4)E{common_E}:0.5)F{common_F};";
 var src = "(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;";
-nwk.parser.parse(src);
-console.log("DONE");
+var tree = nwk.parser.parse(src);
+traverse(tree, function(node) {
+	if (node.children.length === 0) {
+		console.log(node.data + " has no children");
+	}
+	else {
+		for (var i = 0; i < node.children.length; i++) {
+			var child = node.children[i];
+			
+			console.log(node.data + " has child " + child.data + " with branch length " + child.branchlength);
+		}
+	}
+});
+
+console.log("Done with parse");
+
+function traverse(tree, callback) {
+	console.log("Traversing node " + tree.id);
+	callback(tree);
+	for (var i = 0; i < tree.children.length; i++) {
+		traverse(tree.children[i], callback);
+	}
+}
+
 /*
 Symbols:
 (
