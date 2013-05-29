@@ -1,0 +1,30 @@
+/*
+* OneZoom uses a superset of standard NWK for placing latin names, common names, and conservation info into the tree
+* Author: Bremen Braun for TimeTree (www.timetree.org), 2013
+*
+*/
+%lex
+%%
+"{"                                { return '{';      } /* Modification to grammar for OneZoom */
+"}"                                { return '}';      } /* Modification to grammar for OneZoom */
+"_"                                { return '_';      }
+[a-zA-Z_\+\.\\\-\d'\s\[\]\*/]+     { return 'STRING'; } /* This character class may be incomplete */
+/lex
+
+%%
+complexName
+  : latinName infoPart
+  ;
+latinName
+  : STRING '_' STRING
+  | STRING
+  ;
+infoPart
+  : '{' commonName '_' STAB_SYM '_' CONS_SYM '}'
+  | /* EMPTY */
+  ;
+commonName
+  : STRING
+  | /* EMPTY */
+  ;
+%%
