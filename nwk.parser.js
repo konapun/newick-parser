@@ -99,13 +99,13 @@ nwk.parser = {
 			
 			return false;
 		},
-		expect = function(symbol) {
+		expect = function(type) {
 			var returnSym = currtok.symbol;
-			if (accept(symbol)) {
+			if (accept(type)) {
 				return returnSym;
 			}
 			
-			throw new Error("Unexpected symbol " + returnSym);
+			throw new Error("Unexpected symbol " + returnSym + ", expected " + type);
 		},
 		
 		// Begin production rules
@@ -253,17 +253,15 @@ nwk.converter.convert2oz = function(tree) {
 		* ] is replaced by )
 		* * is replaced by a comma
 		*/
-		cplname.replace('[', '(');
-		cplname.replace(']', ')');
-		cplname.replace('*', ',');
+		cplname = cplname.replace(/\[/g, '(').replace(/\]/g, ')').replace(/\*/g, ',');
 		var tokenize = function(srcString) {
 			var tokens = {
 				'{': /{/,
 				'}': /}/,
 				'_': /_/,
-				'STAB_SYM': /U|I|S|D/,
-				'CONS_SYM': /EX|EW|CR|EN|VU|NT|LC|DD|NE/,
-				'STRING': /[a-zA-Z\+\.\\\-\d'\s\/]+/
+				'CONS_SYM': /^EX|EW|CR|EN|VU|NT|LC|DD|NE$/,
+				'STAB_SYM': /^[U|I|S|D]$/,
+				'STRING': /[a-zA-Z\+\.\(\),\\\-\d'\s\/]+/
 			};
 			
 			return nwk.parser.tokenize(srcString, tokens);
@@ -273,31 +271,52 @@ nwk.converter.convert2oz = function(tree) {
 		currtok = tokens.shift(),
 		
 		accept = function(symbol) {
-			if (currtok.type === symbol) {
-				var returnSym = currtok.symbol;
-				currtok = tokens.shift();
-				return returnSym;
+			if (currtok) {
+				if (currtok.type === symbol) {
+					var returnSym = currtok.symbol;
+					currtok = tokens.shift();
+					return returnSym;
+				}
 			}
 			
 			return false;
 		},
-		fuzzyExpect = function(symbol) {
-			var returnSym = currtok.symbol;
-			if (accept(symbol)) {
-				return returnSym;
+		fuzzyExpect = function(type) {
+			if (currtok) {
+				var returnSym = currtok.symbol;
+				if (accept(type)) {
+					return returnSym;
+				}
 			}
 			
 			return false;
 		}
-		expect = function(symbol) {
-			var ret = fuzzyExpect(symbol);
+		expect = function(type) {
+			var ret = fuzzyExpect(type);
 			if (ret === false) {
-				throw new Error("Unexpected symbol " + returnSym);
+				var
+				tokenlist = tokenize(cplname),
+				tokenString = "";
+				
+				for (var i = 0; i < tokenlist.length; i++) {
+					var token = tokenlist[i];
+					tokenString += token.symbol + " (" + token.type + ")\n";
+				}
+				throw new Error("Unexpected symbol in \"" + cplname + "\", expected " + type + "\n" + tokenString);
 			}
 		},
 		
+		popstats = function() { // population statistics
+			if (accept('_')) {
+				accept('CONS_SYM');
+				expect('_');
+				accept('STAB_SYM');
+			}
+			// EMPTY
+		}
 		commonName = function() {
 			if (accept('STRING')) {
+				//console.log("common name: " + commonName);
 				//TODO: set node's cname
 			}
 			// EMPTY
@@ -305,17 +324,14 @@ nwk.converter.convert2oz = function(tree) {
 		infoPart = function() {
 			if (accept('{')) {
 				commonName();
-				expect('_');
-				expect('STAB_SYM');
-				expect('_');
-				expect('CONS_SYM');
+				popstats();
 				expect('}');
 			}
 			// EMPTY
 		},
 		latinName = function() {
 			accept('STRING');
-			if (accept('_')) {
+			if (fuzzyExpect('_')) {
 				accept('STRING');
 			}
 		},
@@ -323,11 +339,8 @@ nwk.converter.convert2oz = function(tree) {
 			latinName();
 			infoPart();
 		};
-		
-		for (var i = 0; i < tokens.length; i++) {
-			var tok = tokens[i];
-			console.log("Token: " + tok.symbol + " (" + tok.type + ")");
-		}
+				
+		return complexName();
 	},
 	ozTree = null,
 	currnode = new ozNode();
@@ -348,9 +361,11 @@ nwk.converter.convert2oz = function(tree) {
 	tree.traverse(function(node) {
 		var
 		oz = new ozNode(),
-		name = node.data,
-		complexName = parseName(name);
+		name = node.data;
 		
+		//console.log("Parsing " + name);
+		var complexName = parseName(name);
+
 		oz.lengthbr = node.branchlength;
 		
 		//TODO: Parse special onezoom stuff

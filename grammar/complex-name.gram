@@ -5,10 +5,12 @@
 */
 %lex
 %%
-"{"                                { return '{';      } /* Modification to grammar for OneZoom */
-"}"                                { return '}';      } /* Modification to grammar for OneZoom */
-"_"                                { return '_';      }
-[a-zA-Z_\+\.\\\-\d'\s\[\]\*/]+     { return 'STRING'; } /* This character class may be incomplete */
+"{"                                { return '{';        }
+"}"                                { return '}';        }
+"_"                                { return '_';        }
+U|I|S|D                            { return 'STAB_SYM'; }
+EX|EW|CR|EN|VU|NT|LC|DD|NE         { return 'CONS_SYM'; }
+[a-zA-Z\+\.\(\),\\\-\d'\s\/]+      { return 'STRING';   }
 /lex
 
 %%
@@ -20,11 +22,15 @@ latinName
   | STRING
   ;
 infoPart
-  : '{' commonName '_' STAB_SYM '_' CONS_SYM '}'
+  : '{' commonName popstats '}'
   | /* EMPTY */
   ;
 commonName
   : STRING
+  | /* EMPTY */
+  ;
+popstats
+  : '_' CONS_SYM '_' STAB_SYM
   | /* EMPTY */
   ;
 %%
