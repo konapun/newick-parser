@@ -9,7 +9,7 @@ var src = "((A:0.1,B:0.2,(C:0.3,D:0.4)E:.5)F:100)G;",
     tree = nwk.parser.parse(src);
 
 tree.visit(function(node) {
-  console.log("Visiting node " + node.data);
+  console.log("Visiting node " + node.data + " with branch length " + node.branchlength);
 });
 ```
 

@@ -334,13 +334,14 @@ nwk.converter.convert2oz = function(tree) {
 	convert = function(n) { // recurse over a generic tree
 		var
 		ozTree = convertNode(n),
+		currnode = ozTree,
 		recurse = function(gn) { // recurse over a generic node
 			for (var i = 0; i < gn.children.length; i++) {
 				var child = gn.children[i],
 				converted = convertNode(child);
 				
-				ozTree.addChild(converted);
-				ozTree = converted;
+				currnode.addChild(converted);
+				currnode = converted;
 				recurse(child);
 			}
 		};
