@@ -1,12 +1,22 @@
 #newick-parser
-A general purpose recursive-descent parser for newick format
-This parser builds a recursive structure from a source string with the following properties:
+A general purpose recursive-descent parser for newick format. This parser builds a recursive structure from a source string with the following properties:
   * **data**, usually the name of the node
   * **id**, an internal ID used for debugging
   * **branchlength**, given by a float
-  * **children** where each child is this structure
+  * **children**, where each child is this structure
 
 
+This parser supports all forms of the Newick spec, **except** trees rooted on a leaf (newick files are rarely given in this form anyway). Examples of supported forms are
+(taken from Wikipedia)
+```
+(,,(,));                               no nodes are named
+(A,B,(C,D));                           leaf nodes are named
+(A,B,(C,D)E)F;                         all nodes are named
+(:0.1,:0.2,(:0.3,:0.4):0.5);           all but root node have a distance to parent
+(:0.1,:0.2,(:0.3,:0.4):0.5):0.0;       all have a distance to parent
+(A:0.1,B:0.2,(C:0.3,D:0.4):0.5);       distances and leaf names (popular)
+(A:0.1,B:0.2,(C:0.3,D:0.4)E:0.5)F;     distances and all names
+```
 ## Usage
 ```js
 var src = "((A:0.1,B:0.2,(C:0.3,D:0.4)E:.5)F:100)G;",
