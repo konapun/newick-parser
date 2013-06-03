@@ -383,6 +383,10 @@ nwk.converter.convert2oz = function(tree, allowNonbinary) {
 	return convert(tree);
 };
 
+nwk.converter.convert2json = function(tree, opts) {
+	return JSON.stringify(tree);
+};
+
 // Test
 //var src = "(A{common_A}:0.1,B{common_B}:0.2,(C{common_C}:0.3,D{common_D}:0.4)E{common_E}:0.5)F{common_F};";
 //var src = "((A:0.1,B:0.2,(C:0.3,D:0.4)E:.5)F:100)G;";
@@ -412,6 +416,9 @@ tree.visit(function(node) {
 	}
 });
 console.log("--------");
+
+var jsTree = nwk.converter.convert2json(tree);
+console.log(jsTree);
 
 var ozTree = nwk.converter.convert2oz(tree, true);
 ozTree.visit(function(node) {
