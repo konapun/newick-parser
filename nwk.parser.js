@@ -109,7 +109,7 @@ nwk.parser = {
 		length = function() {
 			if (accept(':')) {
 				var len = expect('NUMBER');
-				currnode.branchlength = len;
+				currnode.branchlength = parseFloat(len);
 			}
 			// EMPTY - optional length
 		},
