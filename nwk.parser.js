@@ -164,7 +164,12 @@ nwk.parser = {
 			child = new node();
 			
 			child.data = nodename;
-			scope[scope.length-1].addChild(child);
+			if (scope.length-1 >= 0) {
+				scope[scope.length-1].addChild(child);
+			}
+			else { // 1-element tree
+				root = child;
+			}
 			currnode = child;
 		},
 		subtree = function() {
@@ -205,8 +210,10 @@ nwk.parser = {
 	}
 };
 
-nwk.converter = {};
-nwk.converter.convert2oz = function(tree) {
+nwk.converter = function() {
+	this.requireBinary = true;
+};
+nwk.converter.prototype.convert2oz = function(tree) {
 	var ozNode = function() { // node structure as used by OneZoom
 		this.cname = null; // common name
 		this.name1 = null; // genus
@@ -359,7 +366,12 @@ nwk.converter.convert2oz = function(tree) {
 			this.child2 = node;
 		}
 		else {
-			throw new Error("Can't convert tree to OneZoom - not a binary tree");
+			if (this.requireBinary) {
+				throw new Error("Can't convert tree to OneZoom - not a binary tree");
+			}
+			else {
+				this.child2 = node;
+			}
 		}
 	};
 	ozNode.prototype.visit = function(callback) {
