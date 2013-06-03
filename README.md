@@ -1,7 +1,11 @@
 #newick-parser
-A recursive-descent parser for newick format
+A general purpose recursive-descent parser for newick format
+This parser builds a recursive structure from a source string with the following properties:
+  * **data**, usually the name of the node
+  * **id**, an internal ID used for debugging
+  * **branchlength**, given by a float
+  * **children** where each child is this structure
 
-Supports conversion to other formats
 
 ## Usage
 ```js
@@ -9,7 +13,7 @@ var src = "((A:0.1,B:0.2,(C:0.3,D:0.4)E:.5)F:100)G;",
     tree = nwk.parser.parse(src);
 
 tree.visit(function(node) {
-  console.log("Visiting node " + node.data + " with branch length " + node.branchlength);
+  console.log("Visiting node " + node.data + " with branch length " + node.branchlength + " (node has internal id " + node.id + ")");
 });
 ```
 
@@ -17,11 +21,28 @@ tree.visit(function(node) {
 Although by default the newick source is compiled to an easily traversable recursive tree structure, other output
 formats are possible. Currently, the following converters are available:
   * **OneZoom:** Has an additional parser for parsing complex names in the style of OneZoom
-
+  * **JSON:** Convert into a JSON string (requires availability of JSON.stringify; won't work on IE 7 or lower)
+  
 ### Converter Example
 ```js
 // (assuming tree from above)
 var oneZoomTree = nwk.converter.convert2oz(tree);
 
 // now you have a structure suitable for input into OneZoom
+```
+
+## Querying the Tree
+A debugger is also included which provides queries on the tree, currently:
+  * **findNonbinaryNodes:** Identify every node which prevents this tree from being a binary tree
+  * **findUnnamedNodes:** Identify all nodes which have an empty data property
+  * **findUnlengthedNodes:** Identify all nodes with a branch length of 0 (default given length)
+  
+### Querying example
+```js
+var tree = nwk.parser.parse(src);
+var nonbinary = nwk.debugger.findNonbinaryNodes(tree);
+for (var i = 0; i < nonbinary.length; i++) {
+	var node = nonbinary[i];
+	console.log("FOUND: " + node.data + " (" + node.id + ") with branchlength " + node.branchlength + " and " + node.children.length + " children");
+}
 ```
