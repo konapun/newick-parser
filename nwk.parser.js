@@ -211,8 +211,11 @@ nwk.converter.convert2oz = function(tree) {
 		this.cname = null; // common name
 		this.name1 = null; // genus
 		this.name2 = null; // species
+		this.hasname1 = false;
+		this.hasname2 = false;
 		this.lengthbr = null; // branch length (Mya)
 		this.phylogenetic_diversity = 0.0;
+		this.richness_val = 0;
 		this.child1 = null;
 		this.child2 = null;
 		this.popstab = "U";  // One of U, I, S, D
@@ -327,11 +330,15 @@ nwk.converter.convert2oz = function(tree) {
 		oz.popstab = complexName.stability;
 		oz.redlist = complexName.conservationStatus;
 		oz.lengthbr = node.branchlength;
-		oz.phylogenetic_diversity = 0.0; //FIXME: i don't know what this is yet
+		oz.phylogenetic_diversity = 0.0;
+		oz.richness_val = 0;
+		
+		if (oz.name1) oz.hasname1 = true;
+		if (oz.name2) oz.hasname2 = true;
 		
 		return oz;
 	},
-	convert = function(n) { // recurse over a generic tree
+	convert = function(n) {
 		var recurse = function(gn) { // recurse over a generic node
 			var currnode = convertNode(gn);
 			for (var i = 0; i < gn.children.length; i++) {
