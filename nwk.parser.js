@@ -210,10 +210,10 @@ nwk.parser = {
 	}
 };
 
-nwk.converter = function() {
-	this.requireBinary = true;
-};
-nwk.converter.prototype.convert2oz = function(tree) {
+nwk.converter = {};
+nwk.converter.convert2oz = function(tree, allowNonbinary) {
+	allowNonbinary = allowNonbinary || false;
+	
 	var ozNode = function() { // node structure as used by OneZoom
 		this.cname = null; // common name
 		this.name1 = null; // genus
@@ -366,7 +366,7 @@ nwk.converter.prototype.convert2oz = function(tree) {
 			this.child2 = node;
 		}
 		else {
-			if (this.requireBinary) {
+			if (!allowNonbinary) {
 				throw new Error("Can't convert tree to OneZoom - not a binary tree");
 			}
 			else {
@@ -413,7 +413,7 @@ tree.visit(function(node) {
 });
 console.log("--------");
 
-var ozTree = nwk.converter.convert2oz(tree);
+var ozTree = nwk.converter.convert2oz(tree, true);
 ozTree.visit(function(node) {
 	if (node.child1) {
 		console.log("Node " + node.cname + " has children: ");
