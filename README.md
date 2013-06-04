@@ -30,13 +30,16 @@ tree.visit(function(node) {
 ## Other Output Formats
 Although by default the newick source is compiled to an easily traversable recursive tree structure, other output
 formats are possible. Currently, the following converters are available:
+  * **Binary:** Convert the default tree to a binary tree with nodes of the same structure as the original. This will automatically add unnamed parents to nodes with more than two children
+    and will alter branch lengths accordingly so the resulting tree has the same meaning as the original
   * **OneZoom:** Has an additional parser for parsing complex names in the style of OneZoom
   * **JSON:** Convert into a JSON string (requires availability of JSON.stringify; won't work on IE 7 or lower)
   
 ### Converter Example
 ```js
-// (assuming tree from above)
-var oneZoomTree = nwk.converter.convert2oz(tree);
+var tree = nwk.parser.parse(nonbinarySrc), // assume nonbinarySrc is a source string describing a nonbinary tree
+    binaryTree = nwk.converter.toBinary(tree), // produces a binary tree equivalent to the original tree
+    oneZoomTree = nwk.converter.toOneZoom(binaryTree); // Modify the default node structure into that which OneZoom requires
 
 // now you have a structure suitable for input into OneZoom
 ```
