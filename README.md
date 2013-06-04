@@ -32,7 +32,7 @@ Although by default the newick source is compiled to an easily traversable recur
 formats are possible. Currently, the following converters are available:
   * **Binary:** Convert the default tree to a binary tree with nodes of the same structure as the original. This will automatically add unnamed parents to nodes with more than two children
     and will alter branch lengths accordingly so the resulting tree has the same meaning as the original
-  * **OneZoom:** Has an additional parser for parsing complex names in the style of OneZoom
+  * **OneZoom:** Has an additional parser for parsing complex names in the style of [OneZoom](https://github.com/jrosindell/OneZoom)
   * **JSON:** Convert into a JSON string (requires availability of JSON.stringify; won't work on IE 7 or lower)
   
 ### Converter Example

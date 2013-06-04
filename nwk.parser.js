@@ -221,7 +221,13 @@ nwk.parser = {
 				return copy;
 			},
 			deepCopy = function(n) {
-			
+				var copy = shallowCopy(n);
+				copy.children = [];
+				for (var i = 0; i < n.children.length; i++) {
+					copy.addChild(deepCopy(n.children[i]));
+				}
+				
+				return copy;
 			};
 			
 			if (deep) return deepCopy(this);
@@ -274,12 +280,9 @@ nwk.converter.toBinary = function(tree) { // modify tree by adding unnamed ances
 		node.children = [nearest, unnamedRoot];
 	};
 	
-	//FIXME: shouldn't alter original
-	var binary = tree;
-	tree.visit(function(node) {
-		if (node.children.length > 2) {
-			convertToBinary(node);
-		}
+	var binary = tree.clone(true); // deep clone
+	binary.visit(function(node) {
+		convertToBinary(node);
 	});
 	
 	return binary;
@@ -485,23 +488,3 @@ nwk.debugger.findUnlengthedNodes = function(tree) {
 	
 	return targets;
 };
-
-/* TEST: TODO remove */
-/*
-var src = "((B:3,C:4,D:5)A:1)E;"
-    tree = nwk.parser.parse(src),
-	binaryTree = nwk.converter.toBinary(tree);
-	
-binaryTree.visit(function(node) {
-	var nchildren = node.children.length;
-	console.log("Visiting " + node.data +" with branchlength " + node.branchlength + " and " + nchildren + " children");
-	for (var i = 0; i < nchildren; i++) {
-		var
-		child = node.children[i],
-		name = child.data;
-		name = name == "" ? "(implicit parent)" : name;
-		
-		console.log("   CHILD: " +  name);
-	}
-});
-*/
