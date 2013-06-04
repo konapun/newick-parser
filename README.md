@@ -49,6 +49,7 @@ A debugger is also included which provides queries on the tree, currently:
   * **findNonbinaryNodes:** Identify every node which prevents this tree from being a binary tree
   * **findUnnamedNodes:** Identify all nodes which have an empty data property
   * **findUnlengthedNodes:** Identify all nodes with a branch length of 0 (default given length)
+  * **findLeaves:** Identify all leaf nodes
   
 ### Querying example
 ```js

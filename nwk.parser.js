@@ -483,6 +483,14 @@ nwk.debugger.findUnnamedNodes = function(tree) {
 nwk.debugger.findUnlengthedNodes = function(tree) {
 	var targets = [];
 	tree.visit(function(node) {
+		if (node.branchlength == 0) targets.push(node);
+	});
+	
+	return targets;
+};
+nwk.debugger.findLeaves = function(tree) {
+	var targets = [];
+	tree.visit(function(node) {
 		if (node.children.length == 0) targets.push(node);
 	});
 	
