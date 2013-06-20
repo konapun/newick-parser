@@ -496,3 +496,9 @@ nwk.debugger.findLeaves = function(tree) {
 	
 	return targets;
 };
+
+/* For node */
+exports = typeof exports !== 'undefined' ? exports : {};
+exports.parser = nwk.parser;
+exports.converter = nwk.converter;
+exports.debugger = nwk.debugger;

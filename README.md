@@ -1,5 +1,5 @@
 #newick-parser
-A general purpose recursive-descent parser for newick format. This parser builds a recursive structure from a source string with the following properties:
+A general purpose and node.js compatible recursive-descent parser for newick format. This parser builds a recursive structure from a source string with the following properties:
   * **data**, usually the name of the node
   * **id**, an internal ID used for debugging
   * **branchlength**, given by a float
