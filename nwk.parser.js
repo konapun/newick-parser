@@ -202,7 +202,9 @@ nwk.parser = {
 		node.prototype.visit = function(callback) { // depth first traversal
 			callback(this);
 			for (var i = 0; i < this.children.length; i++) {
-				this.children[i].visit(callback);
+				if (this.children[i].visit(callback) === false) {
+					break; // return false from your callback to end the traversal
+				}
 			}
 		};
 		node.prototype.clone = function(deep) {
